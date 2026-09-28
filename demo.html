@@ -1,87 +1,242 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Demo - Agent</title>
+    <title>Interactive Demo - Cloud Agent Day 12</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f0f2f5; }
-        .chat-container { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 70vh; }
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; background: #4a76a8; color: white; border-radius: 12px 12px 0 0; }
-        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .message { max-width: 80%; padding: 12px 16px; border-radius: 15px; line-height: 1.4; }
-        .user-msg { align-self: flex-end; background: #e3f2fd; color: #1565c0; border-bottom-right-radius: 4px; }
-        .bot-msg { align-self: flex-start; background: #f5f5f5; color: #333; border-bottom-left-radius: 4px; }
-        .error-msg { background: #ffebee; color: #c62828; }
-        .meta-info { font-size: 0.8em; color: #777; margin-top: 5px; text-align: right; }
-        .input-area { padding: 15px 20px; border-top: 1px solid #eee; display: flex; gap: 10px; }
-        input[type="text"] { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
-        button { background: #4a76a8; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #3a5d86; }
-        .settings { display: flex; gap: 10px; margin-bottom: 15px; }
-        .settings input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        :root { --primary: #2563eb; --bg: #f8fafc; --panel: #ffffff; --text: #334155; --border: #e2e8f0; --success: #22c55e; --danger: #ef4444; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 350px; background: var(--panel); border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .main { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 20px; overflow: hidden; }
+        
+        h1, h2, h3 { margin: 0; color: #0f172a; }
+        h1 { font-size: 1.5rem; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card h3 { font-size: 1.1rem; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+        
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 0.9rem; margin-bottom: 5px; font-weight: 600; }
+        .input-group input { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; }
+        
+        button { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
+        button.btn-danger { background: var(--danger); }
+        button.btn-success { background: var(--success); }
+        
+        .chat-box { flex: 1; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); display: flex; flex-direction: column; overflow: hidden; }
+        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 80%; padding: 10px 15px; border-radius: 8px; line-height: 1.5; }
+        .msg.user { align-self: flex-end; background: #e0f2fe; color: #0369a1; }
+        .msg.bot { align-self: flex-start; background: #f1f5f9; color: #334155; }
+        .msg.error { align-self: flex-start; background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .msg-meta { font-size: 0.75rem; margin-top: 5px; opacity: 0.7; }
+        
+        .chat-input { display: flex; padding: 15px; background: var(--panel); border-top: 1px solid var(--border); gap: 10px; }
+        .chat-input input { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 4px; outline: none; }
+        
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; background: #e2e8f0; }
+        .status-badge.up { background: #dcfce7; color: #166534; }
+        .status-badge.down { background: #fee2e2; color: #991b1b; }
+        
+        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .metric-box { background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; text-align: center; }
+        .metric-value { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin-top: 5px; }
+        
+        .guide-step { padding: 10px; background: #fffbeb; border-left: 4px solid #f59e0b; margin-bottom: 10px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
-    <h2>Demo Trợ lý AI (Day 12)</h2>
-    <div class="settings">
-        <input type="text" id="apiUrl" value="https://day12-agent-ifnk.onrender.com/ask" placeholder="API URL" style="flex: 2;">
-        <input type="password" id="apiKey" placeholder="Nhập AGENT_API_KEY" style="flex: 1;">
-        <input type="text" id="userId" value="demo-user-1" placeholder="User ID" style="flex: 1;">
-    </div>
-    <div class="chat-container">
-        <div class="chat-header">
-            <b>Agent Bot</b> <span id="status" style="font-size: 0.8em; float: right;"></span>
+
+<div class="sidebar">
+    <h1>Cloud Agent Demo</h1>
+    
+    <div class="card">
+        <h3>Cấu hình Kết nối</h3>
+        <div class="input-group">
+            <label>API URL (Render)</label>
+            <input type="text" id="apiUrl" value="https://day12-agent-ifnk.onrender.com">
         </div>
-        <div class="chat-messages" id="messages">
-            <div class="message bot-msg">Chào anh! Hệ thống đã kết nối. API được bảo vệ bởi Rate Limit (10 req/phút) và Cost Guard (10$). Anh hãy nhập câu hỏi để test nhé!</div>
+        <div class="input-group">
+            <label>API Key (AGENT_API_KEY)</label>
+            <input type="password" id="apiKey" placeholder="Nhập API Key...">
         </div>
-        <div class="input-area">
-            <input type="text" id="question" placeholder="Gõ câu hỏi (VD: Deploy là gì?)..." onkeypress="if(event.key === 'Enter') send()">
-            <button onclick="send()">Gửi</button>
+        <div class="input-group">
+            <label>User ID</label>
+            <input type="text" id="userId" value="sv-test">
         </div>
     </div>
 
-    <script>
-        async function send() {
-            const q = document.getElementById('question').value;
-            if(!q) return;
+    <div class="card">
+        <h3>Probes (CP1 & CP4)</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button onclick="checkHealth()">/health</button>
+            <button onclick="checkReady()" class="btn-success">/ready</button>
+        </div>
+        <div id="probeResult" style="font-family: monospace; font-size: 0.8rem; background: #1e293b; color: #10b981; padding: 10px; border-radius: 4px; display: none;"></div>
+    </div>
+
+    <div class="card">
+        <h3>Kịch bản Demo (Hướng dẫn)</h3>
+        <div class="guide-step"><b>B1: Probes</b> - Bấm /health và /ready để show app đang sống và đã kết nối Redis.</div>
+        <div class="guide-step"><b>B2: Security (CP3)</b> - Thử xóa API Key rồi chat -> Nhận lỗi 401 Unauthorized. Sau đó nhập lại đúng key.</div>
+        <div class="guide-step"><b>B3: Cost & Stateless (CP4)</b> - Chat 2-3 câu bình thường. Chỉ vào bảng Metrics bên phải thấy Số dư () giảm dần, Lịch sử tăng đều (do lưu trên Redis).</div>
+        <div class="guide-step"><b>B4: Rate Limit (CP3)</b> - Bấm nút Spam dưới đây để bắn 15 requests cùng lúc -> Nhận lỗi 429 Too Many Requests (Sliding Window).</div>
+        <button onclick="spamRequests()" class="btn-danger" style="width: 100%; margin-top: 5px;">🔥 Spam 15 Requests (Test Rate Limit)</button>
+    </div>
+</div>
+
+<div class="main">
+    <div class="card">
+        <h3>Trạng thái User (Real-time Metrics)</h3>
+        <div class="metrics-grid">
+            <div class="metric-box">
+                <div>Ngân sách Còn lại</div>
+                <div class="metric-value" id="m-budget">.000</div>
+            </div>
+            <div class="metric-box">
+                <div>Chi phí Lần cuối</div>
+                <div class="metric-value" id="m-cost">.000</div>
+            </div>
+            <div class="metric-box">
+                <div>Độ dài Lịch sử (Redis)</div>
+                <div class="metric-value" id="m-history">0 tin nhắn</div>
+            </div>
+            <div class="metric-box">
+                <div>Tình trạng Request</div>
+                <div class="metric-value status-badge up" id="m-status">BÌNH THƯỜNG</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-box">
+        <div class="chat-messages" id="messages">
+            <div class="msg bot">Chào mừng đến với Demo AI Agent!<br><br>Hãy làm theo <b>Kịch bản Demo</b> ở thanh bên trái để trình bày đầy đủ tính năng của hệ thống nhé.</div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="question" placeholder="Nhập câu hỏi cho AI..." onkeypress="if(event.key === 'Enter') sendMsg()">
+            <button onclick="sendMsg()">Gửi API</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getUrl(path) {
+        let base = document.getElementById('apiUrl').value.replace(/\/$/, "");
+        return base + path;
+    }
+
+    function getHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'X-API-Key': document.getElementById('apiKey').value,
+            'X-User-Id': document.getElementById('userId').value
+        };
+    }
+
+    function addMsg(text, type, meta = '') {
+        const div = document.createElement('div');
+        div.className = 'msg ' + type;
+        div.innerHTML = text + (meta ? <div class="msg-meta"></div> : '');
+        const container = document.getElementById('messages');
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function updateMetrics(cost, budget, history) {
+        if(cost !== undefined) document.getElementById('m-cost').innerText = '$' + cost.toFixed(4);
+        if(budget !== undefined) document.getElementById('m-budget').innerText = '$' + budget.toFixed(4);
+        if(history !== undefined) document.getElementById('m-history').innerText = history + ' tin nhắn';
+        
+        const st = document.getElementById('m-status');
+        st.className = 'metric-value status-badge up';
+        st.innerText = 'THÀNH CÔNG (200)';
+    }
+
+    function showErrorMetric(code, statusText) {
+        const st = document.getElementById('m-status');
+        st.className = 'metric-value status-badge down';
+        st.innerText = LỖI  ();
+    }
+
+    async function checkHealth() {
+        const box = document.getElementById('probeResult');
+        box.style.display = 'block';
+        box.innerText = "Đang gọi /health...";
+        try {
+            const res = await fetch(getUrl('/health'));
+            const data = await res.json();
+            box.innerText = GET /health -> \n;
+        } catch(e) { box.innerText = "Lỗi mạng: " + e; }
+    }
+
+    async function checkReady() {
+        const box = document.getElementById('probeResult');
+        box.style.display = 'block';
+        box.innerText = "Đang gọi /ready...";
+        try {
+            const res = await fetch(getUrl('/ready'));
+            const data = await res.json();
+            box.innerText = GET /ready -> \n;
+        } catch(e) { box.innerText = "Lỗi mạng: " + e; }
+    }
+
+    async function sendMsg(qOverride = null) {
+        const input = document.getElementById('question');
+        const q = qOverride || input.value;
+        if(!q) return;
+        
+        if(!qOverride) {
+            addMsg(q, 'user');
+            input.value = '';
+        }
+
+        try {
+            const res = await fetch(getUrl('/ask'), {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ question: q })
+            });
             
-            const apiKey = document.getElementById('apiKey').value;
-            const userId = document.getElementById('userId').value;
-            const apiUrl = document.getElementById('apiUrl').value;
+            const data = await res.json();
             
-            addMsg(q, 'user-msg');
-            document.getElementById('question').value = '';
-            
-            try {
-                const res = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey, 'X-User-Id': userId },
-                    body: JSON.stringify({ question: q })
-                });
-                
-                const data = await res.json();
-                
-                if(res.ok) {
-                    let text = data.answer;
-                    text += <div class="meta-info">Chi phí: {data.cost_usd} | Còn lại: {data.budget_remaining.toFixed(3)} | Lịch sử:  tin</div>;
-                    addMsg(text, 'bot-msg');
-                } else {
-                    addMsg(LỖI : , 'bot-msg error-msg');
-                }
-            } catch (e) {
-                addMsg(Lỗi kết nối: , 'bot-msg error-msg');
+            if(res.ok) {
+                addMsg(data.answer, 'bot', [Log] Thời gian xử lý thành công. Cập nhật Redis state.);
+                updateMetrics(data.cost_usd, data.budget_remaining, data.history_length);
+            } else {
+                let errText = JSON.stringify(data.detail || data);
+                addMsg(Từ chối phục vụ: , 'error', Mã lỗi HTTP: );
+                showErrorMetric(res.status, res.status === 429 ? 'RATE LIMIT' : (res.status === 401 ? 'UNAUTHORIZED' : 'ERROR'));
             }
+        } catch (e) {
+            addMsg(Lỗi kết nối tới Server: , 'error');
+        }
+    }
+
+    async function spamRequests() {
+        addMsg("Bắt đầu gửi 15 requests đồng thời để test Sliding Window Rate Limit...", 'user');
+        const promises = [];
+        for(let i=0; i<15; i++) {
+            promises.push(fetch(getUrl('/ask'), {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ question: "spam test " + i })
+            }));
         }
         
-        function addMsg(html, className) {
-            const div = document.createElement('div');
-            div.className = 'message ' + className;
-            div.innerHTML = html;
-            document.getElementById('messages').appendChild(div);
-            div.scrollIntoView();
-        }
-    </script>
+        const results = await Promise.all(promises);
+        let success = 0;
+        let rateLimited = 0;
+        
+        results.forEach(res => {
+            if(res.status === 200) success++;
+            else if(res.status === 429) rateLimited++;
+        });
+        
+        addMsg(KẾT QUẢ SPAM:<br>- Lọt qua:  reqs<br>- Bị chặn (429 Too Many Requests):  reqs, rateLimited > 0 ? 'error' : 'bot');
+        if(rateLimited > 0) showErrorMetric(429, 'RATE LIMIT BLOCKED');
+    }
+</script>
 </body>
 </html>

@@ -16,7 +16,7 @@ Trong Settings, gent_api_key không có giá trị mặc định nên app chế
 khi khởi động nếu thiếu biến môi trường. Hãy mô tả một tình huống cụ thể mà
 việc "chết sớm" này cứu bạn, so với việc để mặc định "changeme".
 
-> Nếu mình để nguyên "changeme", lúc app chạy lên sẽ không báo lỗi gì cả, cứ tưởng ngon. Nhưng đến lúc user gọi API thật, nó mới quăng lỗi vì sai API key. Nhờ set không có default value, app sẽ chết ngay lúc vừa khởi động (fail-fast), giúp mình biết ngay là quên set biến môi trường, khỏi mất công loay hoay debug trên production.
+> Nếu để mặc định là "changeme", ứng dụng vẫn khởi động thành công trên server. Tuy nhiên, khi có request thực tế gọi đến LLM, lỗi mới phát sinh do sai API key. Việc không set default value giúp hệ thống "chết ngay từ đầu" (fail-fast), buộc em phải cung cấp đúng biến môi trường trước khi quá trình deploy hoàn tất, ngăn chặn các lỗi ngầm khó phát hiện khi đưa lên production.
 
 ---
 
@@ -27,7 +27,7 @@ nêu **hai** việc bạn làm được với dòng log đó mà print("đã tr�
 không làm được.
 
 > {"event": "ask_completed", "level": "info", "timestamp": "2026-09-28T16:00:00Z", "user_id": "sv-test", "cost_usd": 0.0015}
-> Hai việc làm được: 1. Có thể vứt đống log này vào Kibana/Datadog để tự động sum tiền (cost_usd) theo từng user_id cực nhanh. 2. Filter ra các event lỗi một cách chuẩn xác nhờ key-value thay vì ngồi viết Regex tìm text thủ công.
+> Hai việc làm được: 1. Có thể đưa log này vào các hệ thống như Elasticsearch/Kibana để tự động tổng hợp chi phí (sum cost_usd) theo từng user_id rất dễ dàng. 2. Lọc chính xác các sự kiện lỗi dựa trên trường "level" hoặc "event" thay vì phải phân tích chuỗi văn bản (regex) phức tạp.
 
 ---
 
@@ -48,7 +48,7 @@ docker images | grep agent
 
 Giải thích: phần dung lượng chênh lệch đó là những gì?
 
-> Phần 850MB chênh lệch toàn là mấy cái tool build code, gcc, rồi đống cache pip sinh ra lúc tải thư viện. Khi dùng multi-stage, mình chỉ bốc đúng app và thư viện đã cài xong ném sang một cái image nhẹ (slim) để chạy thôi, vứt hết đống rác lúc build đi.
+> Dung lượng chênh lệch (~850MB) là do các công cụ build như gcc, mã nguồn C, và bộ nhớ đệm (cache) của pip sinh ra trong quá trình cài đặt thư viện. Khi dùng multi-stage, em chỉ copy thư mục chứa app và các thư viện đã biên dịch sang một image mới siêu nhẹ (slim), loại bỏ hoàn toàn các file tạm không cần thiết cho lúc chạy thực tế.
 
 ---
 
@@ -58,7 +58,7 @@ Sửa một ký tự trong pp/main.py rồi build lại. Với Dockerfile của
 layer nào được dùng lại từ cache, layer nào phải chạy lại? Nếu bạn đặt
 COPY . . lên trước RUN pip install thì kết quả khác thế nào?
 
-> Layer cài thư viện (pip install) vẫn được dùng lại từ cache, chỉ có layer COPY . . và mấy cái lệnh sau nó bị chạy lại. Nếu lỡ dại đặt COPY . . lên trước RUN pip install, thì cứ mỗi lần sửa 1 dấu phẩy trong python, Docker sẽ vứt luôn cache pip, bắt ngồi chờ tải lại thư viện từ đầu rất ức chế.
+> Lớp cài đặt thư viện (RUN pip install) vẫn được tái sử dụng từ cache, chỉ có lớp COPY . . và các lệnh sau đó mới bị chạy lại. Nếu đặt COPY . . lên trước RUN pip install, mỗi khi sửa đổi dù chỉ một dòng code Python, Docker sẽ vô hiệu hóa cache của pip, khiến em phải đợi tải và cài đặt lại toàn bộ thư viện từ đầu, rất lãng phí thời gian.
 
 ---
 
@@ -68,7 +68,7 @@ Container mặc định chạy bằng root. Mô tả chuỗi sự kiện dẫn t
 trong code Python của bạn" tới "kẻ tấn công có quyền cao trên máy host", và
 lệnh USER cắt đứt chuỗi đó ở chỗ nào.
 
-> Nếu dính lỗi RCE trong python app, hacker sẽ chạy code dưới quyền của app. Nếu để mặc định là root, hacker sẽ thành root của container đó. Lỡ như container chạy kiểu privileged hoặc mount file hệ thống vào, nó có thể từ đó hack luôn máy chủ host. Đổi sang USER appuser chặn ngay từ đầu: hacker vô được cũng chỉ là một user cùi, không thể quậy phá OS.
+> Nếu ứng dụng Python có lỗ hổng RCE, kẻ tấn công có thể thực thi mã độc dưới quyền của process hiện tại. Nếu chạy bằng root, chúng sẽ kiểm soát hoàn toàn container, từ đó có thể lợi dụng các kẽ hở (như privileged mode) để chiếm quyền điều khiển máy chủ host. Lệnh USER appuser giới hạn quyền này: kẻ tấn công chỉ có quyền của một user thông thường, không thể can thiệp vào hệ thống lõi.
 
 ---
 
@@ -79,7 +79,7 @@ phút đồng hồ (reset lúc giây 00), một người dùng có thể gửi t
 request trong 2 giây liên tiếp khi hạn mức là 10/phút? Giải thích cách đạt được
 con số đó.
 
-> Sẽ có lúc họ gửi được tối đa 20 requests. Ví dụ 00:59 phút họ bắn liền 10 request. Sang đúng 01:00 phút biến đếm đếm lại từ đầu, họ lập tức bắn tiếp 10 request nữa. Kết quả là 20 request đập vào hệ thống chỉ trong vỏn vẹn 2 giây. Dùng sliding window thì cửa sổ 60s trượt liên tục, không bao giờ có kẽ hở giao thời kiểu này.
+> Có thể gửi tối đa 20 requests. Ví dụ: tại thời điểm 00:59, người dùng gửi 10 requests. Vừa bước sang 01:00, bộ đếm bị reset về 0, họ lập tức gửi tiếp 10 requests nữa. Kết quả là hệ thống phải chịu 20 requests chỉ trong 2 giây. Cơ chế sliding window (cửa sổ trượt) giải quyết triệt để vấn đề này vì khung thời gian 60s liên tục dịch chuyển theo từng request, không bị ranh giới phút cứng nhắc làm sai lệch.
 
 ---
 
@@ -88,7 +88,7 @@ con số đó.
 Hai cơ chế này khác nhau ở điểm nào? Cho một tình huống mà rate limit cho qua
 nhưng cost guard phải chặn, và một tình huống ngược lại.
 
-> Rate limit là để chặn spam phá hoại (đếm số lần/phút), cost guard là để chặn phá sản (đếm tiền/tháng). Rate limit qua nhưng cost chặn: User hỏi 1 câu siêu dài tốn tận 15 USD, mới gọi 1 lần (rate limit ok) nhưng vượt ngân sách 10 USD (cost chặn). Ngược lại: User spam 100 câu chữ "hi" rẻ bèo, tiền chưa hết (cost ok) nhưng gọi quá nhanh (rate limit chặn ngay).
+> Rate limit kiểm soát tần suất gửi yêu cầu (số lần/phút) để chống spam, còn Cost guard kiểm soát ngân sách tiêu thụ (tiền/tháng) để tránh vượt chi phí. Tình huống Rate limit cho qua nhưng Cost guard chặn: Người dùng hỏi 1 prompt cực dài tốn 15 USD, dù chỉ gọi 1 lần (dưới 10 lần/phút) nhưng đã vượt ngân sách 10 USD. Ngược lại, nếu họ spam 100 từ "hello" rất rẻ, ngân sách vẫn còn nhưng thao tác quá nhanh nên Rate limit sẽ chặn.
 
 ---
 
@@ -97,7 +97,7 @@ nhưng cost guard phải chặn, và một tình huống ngược lại.
 Nếu gộp hai endpoint làm một và cho nó kiểm tra Redis, chuyện gì xảy ra với cụm
 3 container khi Redis mất kết nối 30 giây? Trả lời theo đúng thứ tự sự kiện.
 
-> Nếu gộp chung, khi Redis sập 30s, health check sẽ báo lỗi (do check redis). Khi đó Orchestrator (Docker/K8s) tưởng app mình bị treo cứng nên sẽ rút ống thở, kill cả 3 container rồi khởi động lại. Cả hệ thống sập toàn tập. Tách ra thì khi Redis chết, readiness chỉ làm app ngừng nhận traffic mới chứ không giết app, khi Redis sống lại app tự phục hồi.
+> Nếu gộp chung, khi Redis sập 30s, health check sẽ báo lỗi. Orchestrator (Docker Swarm/Kubernetes) sẽ coi container đó đã "chết" và tiến hành kill/restart cả 3 container. Toàn bộ hệ thống sẽ sập hoàn toàn. Khi tách riêng, readiness check thất bại chỉ báo cho Load Balancer ngừng gửi request mới vào container, ứng dụng vẫn sống và sẽ tự động phục hồi phục vụ ngay khi Redis kết nối lại.
 
 ---
 
@@ -107,7 +107,7 @@ Chạy docker compose up --scale agent=3 rồi gọi /ask nhiều lần với c�
 X-User-Id. Quan sát history_length trong response. Nếu lịch sử được lưu
 trong một dict Python thay vì Redis, bạn sẽ thấy con số đó thay đổi thế nào?
 
-> Em test thử thấy số history_length nó cứ nhảy loạn cào cào (ví dụ 1, 2, 1, 1, 3) vì request bị ném ngẫu nhiên cho 3 container, mà con A thì mù tịt dict trên RAM của con B. Khi dùng Redis thì dữ liệu được đẩy ra ngoài lưu tập trung, nên cả 3 con đều đọc chung một chỗ, số đếm mới tăng đều đặn chuẩn xác 1, 2, 3 được.
+> Em nhận thấy chỉ số history_length sẽ thay đổi không nhất quán (ví dụ: 1, 2, 1, 1, 3). Lý do là các request được phân bổ ngẫu nhiên vào 3 container khác nhau, mà biến dict trong RAM của container này lại không chia sẻ với container kia. Khi chuyển sang dùng Redis, trạng thái được lưu trữ tập trung bên ngoài (stateless app), giúp cả 3 container đều đọc chung một lịch sử, do đó số đếm mới tăng đều đặn.
 
 ---
 
@@ -117,4 +117,4 @@ Ghi lại **một** lỗi bạn gặp khi deploy lên cloud (build fail, health 
 timeout, sai REDIS_URL, app không đọc $PORT...): thông báo lỗi là gì, bạn
 tìm ra nguyên nhân bằng cách nào, và sửa ra sao?
 
-> Lúc vứt lên Render em bị lỗi HTTP 404 Not Found ngay khi mở cái URL trang chủ của nó. Sau đó check log và nhớ lại mới nhận ra là nãy giờ code mình làm gì có viết endpoint nào ở đường dẫn gốc. Sửa bằng cách đơn giản là gõ thêm /health hoặc /ready vào đuôi URL là nó trả về JSON ngon lành cành đào.
+> Khi deploy lên Render, em gặp lỗi HTTP 404 Not Found khi truy cập vào URL gốc. Qua việc kiểm tra log và mã nguồn, em nhận ra ứng dụng không định nghĩa endpoint cho route "/". Cách khắc phục rất đơn giản: chỉ cần thêm "/health" hoặc "/ready" vào URL trên trình duyệt thì hệ thống trả về đúng file JSON trạng thái như mong muốn.
