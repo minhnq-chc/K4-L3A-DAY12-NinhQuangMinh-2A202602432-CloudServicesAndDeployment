@@ -204,8 +204,9 @@ ${JSON.stringify(data, null, 2)}
             const data = await res.json();
             
             if(res.ok) {
-                addMsg(data.answer, 'bot', `✅ Xử lý thành công. Trừ $${data.cost_usd.toFixed(4)} vào tài khoản.`);
-                document.getElementById('m-budget').innerText = '$' + data.budget_remaining.toFixed(4);
+                window.localBudget = (window.localBudget || 10.000) - data.cost_usd;
+                addMsg(data.answer, 'bot', `✅ Xử lý thành công. Trừ $${data.cost_usd.toFixed(6)} vào tài khoản.`);
+                document.getElementById('m-budget').innerText = '$' + window.localBudget.toFixed(4);
                 document.getElementById('m-history').innerText = data.history_length + ' tin nhắn';
                 setStatus(200, 'Thành công', 'success');
             } else {
