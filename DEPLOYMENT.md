@@ -30,7 +30,7 @@ Ghi tên biến và **nguồn giá trị**, không ghi giá trị:
 |------|--------|---------|
 | `PORT` | ✅ | platform tự gán |
 | `AGENT_API_KEY` | ✅ | đặt trong dashboard, không nằm trong repo |
-| `REDIS_URL` | ✅ | Da hoan thanh |
+| `REDIS_URL` | ✅ | Render Internal Redis (day12-redis) |
 | `RATE_LIMIT_PER_MINUTE` | ✅ | 10 |
 | `MONTHLY_BUDGET_USD` | ✅ | 10.0 |
 | `LOG_LEVEL` | ✅ | INFO |
@@ -73,7 +73,7 @@ done; echo
 Dán output của các lệnh trên vào đây:
 
 ```
-Da hoan thanh
+health: 200 ok, ready: 200 redis true, ask no key: 401
 ```
 
 ## Ảnh Chụp Màn Hình
@@ -97,5 +97,5 @@ Không đăng ký được tài khoản cloud? Vẫn nộp được bài, nhưng
 5. Ghi rõ lý do không deploy được vào phần dưới đây:
 
 ```
-Da hoan thanh
+Da deploy thanh cong len Render, khong can du phong
 ```
