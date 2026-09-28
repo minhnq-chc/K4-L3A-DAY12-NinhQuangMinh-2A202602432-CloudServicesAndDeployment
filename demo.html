@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Demo - Agent</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f0f2f5; }
+        .chat-container { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 70vh; }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; background: #4a76a8; color: white; border-radius: 12px 12px 0 0; }
+        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .message { max-width: 80%; padding: 12px 16px; border-radius: 15px; line-height: 1.4; }
+        .user-msg { align-self: flex-end; background: #e3f2fd; color: #1565c0; border-bottom-right-radius: 4px; }
+        .bot-msg { align-self: flex-start; background: #f5f5f5; color: #333; border-bottom-left-radius: 4px; }
+        .error-msg { background: #ffebee; color: #c62828; }
+        .meta-info { font-size: 0.8em; color: #777; margin-top: 5px; text-align: right; }
+        .input-area { padding: 15px 20px; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        input[type="text"] { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
+        button { background: #4a76a8; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #3a5d86; }
+        .settings { display: flex; gap: 10px; margin-bottom: 15px; }
+        .settings input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h2>Demo Trợ lý AI (Day 12)</h2>
+    <div class="settings">
+        <input type="text" id="apiUrl" value="https://day12-agent-ifnk.onrender.com/ask" placeholder="API URL" style="flex: 2;">
+        <input type="password" id="apiKey" placeholder="Nhập AGENT_API_KEY" style="flex: 1;">
+        <input type="text" id="userId" value="demo-user-1" placeholder="User ID" style="flex: 1;">
+    </div>
+    <div class="chat-container">
+        <div class="chat-header">
+            <b>Agent Bot</b> <span id="status" style="font-size: 0.8em; float: right;"></span>
+        </div>
+        <div class="chat-messages" id="messages">
+            <div class="message bot-msg">Chào anh! Hệ thống đã kết nối. API được bảo vệ bởi Rate Limit (10 req/phút) và Cost Guard (10$). Anh hãy nhập câu hỏi để test nhé!</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="question" placeholder="Gõ câu hỏi (VD: Deploy là gì?)..." onkeypress="if(event.key === 'Enter') send()">
+            <button onclick="send()">Gửi</button>
+        </div>
+    </div>
+
+    <script>
+        async function send() {
+            const q = document.getElementById('question').value;
+            if(!q) return;
+            
+            const apiKey = document.getElementById('apiKey').value;
+            const userId = document.getElementById('userId').value;
+            const apiUrl = document.getElementById('apiUrl').value;
+            
+            addMsg(q, 'user-msg');
+            document.getElementById('question').value = '';
+            
+            try {
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey, 'X-User-Id': userId },
+                    body: JSON.stringify({ question: q })
+                });
+                
+                const data = await res.json();
+                
+                if(res.ok) {
+                    let text = data.answer;
+                    text += <div class="meta-info">Chi phí: {data.cost_usd} | Còn lại: {data.budget_remaining.toFixed(3)} | Lịch sử:  tin</div>;
+                    addMsg(text, 'bot-msg');
+                } else {
+                    addMsg(LỖI : , 'bot-msg error-msg');
+                }
+            } catch (e) {
+                addMsg(Lỗi kết nối: , 'bot-msg error-msg');
+            }
+        }
+        
+        function addMsg(html, className) {
+            const div = document.createElement('div');
+            div.className = 'message ' + className;
+            div.innerHTML = html;
+            document.getElementById('messages').appendChild(div);
+            div.scrollIntoView();
+        }
+    </script>
+</body>
+</html>
