@@ -151,3 +151,15 @@ if __name__ == "__main__":
 
     settings = get_settings()
     uvicorn.run(app, host="0.0.0.0", port=settings.port)
+
+
+@app.get("/")
+async def root():
+    '''Phục vụ giao diện Demo trực tiếp trên đường dẫn gốc'''
+    from fastapi.responses import HTMLResponse, FileResponse
+    from pathlib import Path
+    
+    demo_path = Path("demo.html")
+    if demo_path.exists():
+        return FileResponse(demo_path)
+    return {"message": "Cloud Agent Day 12 is running! Add /health or /ready to check status."}
